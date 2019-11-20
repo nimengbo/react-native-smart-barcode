@@ -105,6 +105,25 @@ RCT_CUSTOM_VIEW_PROPERTY(barCodeTypes, NSArray, RCTBarcode) {
     });
 }
 
+
+RCT_EXPORT_METHOD(switchState:(BOOL *)newState)
+{
+    if ([AVCaptureDevice class]) {
+        AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+        if ([device hasTorch]){
+            [device lockForConfiguration:nil];
+            
+            if (newState) {
+                [device setTorchMode:AVCaptureTorchModeOn];
+            } else {
+                [device setTorchMode:AVCaptureTorchModeOff];
+            }
+            
+            [device unlockForConfiguration];
+        }
+    }
+}
+
 RCT_EXPORT_METHOD(startSession) {
     #if TARGET_IPHONE_SIMULATOR
     return;
