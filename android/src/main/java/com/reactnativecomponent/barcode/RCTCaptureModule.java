@@ -1,5 +1,9 @@
 package com.reactnativecomponent.barcode;
 
+import android.content.Context;
+import android.hardware.Camera;
+import android.hardware.camera2.CameraManager;
+import android.os.Build;
 import android.os.Environment;
 import android.support.annotation.Nullable;
 import android.widget.Toast;
@@ -18,7 +22,8 @@ import java.util.Map;
 public class RCTCaptureModule extends ReactContextBaseJavaModule {
     private ReactApplicationContext mContext;
     RCTCaptureManager captureManager;
-
+    private Boolean isTorchOn = false;
+    private Camera camera;
 
     public RCTCaptureModule(ReactApplicationContext reactContext, RCTCaptureManager captureManager) {
         super(reactContext);
@@ -73,6 +78,41 @@ public class RCTCaptureModule extends ReactContextBaseJavaModule {
     }
 
 
+    @ReactMethod
+    public void switchState(Boolean newState, Callback successCallback, Callback failureCallback) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            CameraManager cameraManager =
+                    (CameraManager) this.mContext.getSystemService(Context.CAMERA_SERVICE);
+
+            try {
+                String cameraId = cameraManager.getCameraIdList()[0];
+                cameraManager.setTorchMode(cameraId, newState);
+                successCallback.invoke(true);
+            } catch (Exception e) {
+                String errorMessage = e.getMessage();
+                failureCallback.invoke("Error: " + errorMessage);
+            }
+        } else {
+            Camera.Parameters params;
+
+            if (!isTorchOn) {
+                camera = Camera.open();
+                params = camera.getParameters();
+                params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                camera.setParameters(params);
+                camera.startPreview();
+                isTorchOn = true;
+            } else {
+                params = camera.getParameters();
+                params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+
+                camera.setParameters(params);
+                camera.stopPreview();
+                camera.release();
+                isTorchOn = false;
+            }
+        }
+    }
 
     @ReactMethod
     public void startSession() {
